@@ -8,10 +8,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async (
-        pathname
-        /* clientPayload */
-      ) => {
+      onBeforeGenerateToken: async () => {
         // Generate a client token for the browser to upload the file
         // ⚠️ Authenticate and authorize users before generating the token.
         // Otherwise, you're allowing anonymous uploads.
@@ -44,6 +41,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           // const { userId } = JSON.parse(tokenPayload);
           // await db.update({ videoUrl: blob.url, userId });
         } catch (error) {
+          console.error(error);
           throw new Error("Could not update user");
         }
       },

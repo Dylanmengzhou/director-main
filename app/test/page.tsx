@@ -2,6 +2,7 @@
 
 import { type PutBlobResult } from "@vercel/blob";
 import { upload } from "@vercel/blob/client";
+import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 
 export default function VideoUploadPage() {
@@ -9,7 +10,7 @@ export default function VideoUploadPage() {
   const [blob, setBlob] = useState<PutBlobResult | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-
+  const router = useRouter();
   return (
     <div className="max-w-2xl mx-auto p-8">
       <h1 className="text-3xl font-bold mb-8 text-center">视频上传</h1>
@@ -149,9 +150,14 @@ export default function VideoUploadPage() {
       )}
 
       <div className="mt-8 text-center">
-        <a href="/" className="text-blue-600 hover:text-blue-800 underline">
+        <div
+          onClick={() => {
+            router.push("/");
+          }}
+          className="text-blue-600 hover:text-blue-800 underline"
+        >
           返回主页查看所有视频
-        </a>
+        </div>
       </div>
     </div>
   );

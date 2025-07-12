@@ -138,6 +138,7 @@ function VideoCard({
   const handleError = () => {
     console.log("Video load error:", video.url);
     setHasError(true);
+    console.log("Video load error:", hasError);
     setIsLoaded(false);
   };
 

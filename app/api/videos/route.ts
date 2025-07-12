@@ -55,6 +55,7 @@ export async function GET() {
     const videos = await getVideos();
     return NextResponse.json({ videos });
   } catch (error) {
+    console.error("获取视频列表失败:", error);
     return NextResponse.json({ error: "获取视频列表失败" }, { status: 500 });
   }
 }
