@@ -1,102 +1,367 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+
+// 视频数据类型定义
+interface VideoData {
+  id: number;
+  title: string;
+  url: string;
+  description: string;
+  uploadDate?: string;
+}
+
+// 示例视频数据
+const sampleVideos: VideoData[] = [
+  {
+    id: 1,
+    title: "作品 1",
+    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    description: "影视作品展示",
+  },
+  {
+    id: 2,
+    title: "作品 2",
+    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    description: "影视作品展示",
+  },
+  {
+    id: 3,
+    title: "作品 3",
+    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    description: "影视作品展示",
+  },
+  {
+    id: 4,
+    title: "作品 4",
+    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    description: "影视作品展示",
+  },
+];
+
+// 全屏视频播放器组件
+function FullscreenPlayer({
+  video,
+  onClose,
+}: {
+  video: VideoData;
+  onClose: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    // 自动播放全屏视频
+    if (videoRef.current) {
+      videoRef.current.play();
+    }
+
+    // ESC键关闭全屏
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+      {/* 关闭按钮 */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full flex items-center justify-center text-white transition-colors"
+      >
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+
+      {/* 视频播放器 */}
+      <video
+        ref={videoRef}
+        className="max-w-full max-h-full"
+        controls
+        autoPlay
+        loop
+        onClick={(e) => e.stopPropagation()}
+      >
+        <source src={video.url} type="video/mp4" />
+        您的浏览器不支持视频播放
+      </video>
+
+      {/* 视频信息 */}
+      <div className="absolute bottom-4 left-4 text-white">
+        <h3 className="text-lg font-semibold">{video.title}</h3>
+        <p className="text-sm text-gray-300">{video.description}</p>
+      </div>
+
+      {/* 点击空白区域关闭 */}
+      <div className="absolute inset-0 -z-10" onClick={onClose}></div>
+    </div>
+  );
+}
+
+// 简化的视频卡片组件
+function VideoCard({
+  video,
+  onFullscreen,
+}: {
+  video: VideoData;
+  onFullscreen: (video: VideoData) => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // 视频加载完成
+  const handleCanPlay = () => {
+    setIsLoaded(true);
+    setHasError(false);
+  };
+
+  // 视频加载错误
+  const handleError = () => {
+    console.log("Video load error:", video.url);
+    setHasError(true);
+    setIsLoaded(false);
+  };
+
+  // 鼠标悬停
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (videoRef.current && isLoaded) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {
+        console.log("Auto play failed");
+      });
+    }
+  };
+
+  // 鼠标离开
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setIsPlaying(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  // 点击全屏播放
+  const handleClick = () => {
+    onFullscreen(video);
+  };
+
+  return (
+    <div
+      className="group relative cursor-pointer"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
+    >
+      <div className="relative w-full h-60 overflow-hidden">
+        {/* 视频元素 - 直接显示，无背景色 */}
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover bg-transparent"
+          onCanPlay={handleCanPlay}
+          onError={handleError}
+          onLoadStart={() => console.log("Video load start:", video.title)}
+          muted
+          loop
+          playsInline
+          autoPlay={false}
+        >
+          <source src={video.url} type="video/mp4" />
+        </video>
+
+        {/* 简单的加载指示器 - 只在视频未加载时显示 */}
+        {!isLoaded && (
+          <div className="absolute top-2 left-2">
+            <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {/* 简单的播放指示器 - 右下角 */}
+        {isHovered && isLoaded && (
+          <div className="absolute bottom-2 right-2">
+            <div className="w-6 h-6 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+              {isPlaying ? (
+                <div className="w-2 h-2 bg-white"></div>
+              ) : (
+                <div className="w-0 h-0 border-l-[4px] border-l-white border-t-[2px] border-b-[2px] border-t-transparent border-b-transparent ml-0.5"></div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 上传标识 */}
+        {video.uploadDate && (
+          <div className="absolute top-1 right-1">
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [videos, setVideos] = useState<VideoData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fullscreenVideo, setFullscreenVideo] = useState<VideoData | null>(
+    null
+  );
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // 加载视频
+  const loadVideos = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/videos");
+      if (response.ok) {
+        const data = await response.json();
+        const allVideos = [...data.videos, ...sampleVideos];
+        setVideos(allVideos);
+      } else {
+        setVideos(sampleVideos);
+      }
+    } catch (error) {
+      console.error("加载视频失败:", error);
+      setVideos(sampleVideos);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadVideos();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* 头部 */}
+      <header className=" sticky top-0 bg-black z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-xl font-bold">作品展示</h1>
+              <p className="text-sm text-gray-400">SHOWREEL</p>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={loadVideos}
+                disabled={loading}
+                className="text-sm bg-gray-800 px-3 py-1.5 rounded hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? "Loading..." : "Refresh"}
+              </button>
+
+              <Link
+                href="/test"
+                className="bg-white text-black px-3 py-1.5 rounded text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                Upload
+              </Link>
+            </div>
+          </div>
         </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* 统计 */}
+
+        {/* 视频网格 */}
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
+            {videos.map((video) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+                onFullscreen={setFullscreenVideo}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* 全屏播放器 */}
+        {fullscreenVideo && (
+          <FullscreenPlayer
+            video={fullscreenVideo}
+            onClose={() => setFullscreenVideo(null)}
+          />
+        )}
+
+        {/* 空状态 */}
+        {!loading && videos.length === 0 && (
+          <div className="text-center py-20">
+            <div className="w-12 h-12 mx-auto mb-3 bg-gray-800 rounded-full flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No Content</h3>
+            <p className="text-gray-400 mb-4">
+              Upload your first video to get started
+            </p>
+            <Link
+              href="/test"
+              className="bg-white text-black px-4 py-2 rounded font-medium hover:bg-gray-200 transition-colors"
+            >
+              Upload Now
+            </Link>
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      <div className="mb-6 text-center">
+        <div className="text-gray-400 text-sm">
+          <span className="text-white font-bold">{videos.length}</span> Works
+          {videos.filter((v) => v.uploadDate).length > 0 && (
+            <>
+              {" • "}
+              <span className="text-green-400 font-bold">
+                {videos.filter((v) => v.uploadDate).length}
+              </span>{" "}
+              Uploaded
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* 底部 */}
+      <footer className=" mt-12 py-6">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
+          Professional Video Showcase • Responsive Grid • Auto-Play Preview
+        </div>
       </footer>
     </div>
   );
