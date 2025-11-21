@@ -5,40 +5,13 @@ import Link from "next/link";
 
 // 视频数据类型定义
 interface VideoData {
-  id: number;
+  id: string;
   title: string;
   url: string;
   description: string;
-  uploadDate?: string;
+  uploadDate: string;
+  size: number;
 }
-
-// 示例视频数据
-const sampleVideos: VideoData[] = [
-  {
-    id: 1,
-    title: "作品 1",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    description: "影视作品展示",
-  },
-  {
-    id: 2,
-    title: "作品 2",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    description: "影视作品展示",
-  },
-  {
-    id: 3,
-    title: "作品 3",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    description: "影视作品展示",
-  },
-  {
-    id: 4,
-    title: "作品 4",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    description: "影视作品展示",
-  },
-];
 
 // 全屏视频播放器组件
 function FullscreenPlayer({
@@ -189,12 +162,36 @@ function VideoCard({
           autoPlay={false}
         >
           <source src={video.url} type="video/mp4" />
+          <source src={video.url} type="video/quicktime" />
+          <source src={video.url} type="video/webm" />
         </video>
 
         {/* 简单的加载指示器 - 只在视频未加载时显示 */}
-        {!isLoaded && (
+        {!isLoaded && !hasError && (
           <div className="absolute top-2 left-2">
             <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {/* 错误提示 */}
+        {hasError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">
+            <div className="text-center">
+              <svg
+                className="w-8 h-8 mx-auto mb-2 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <p className="text-xs text-red-400">加载失败</p>
+            </div>
           </div>
         )}
 
@@ -208,13 +205,6 @@ function VideoCard({
                 <div className="w-0 h-0 border-l-[4px] border-l-white border-t-[2px] border-b-[2px] border-t-transparent border-b-transparent ml-0.5"></div>
               )}
             </div>
-          </div>
-        )}
-
-        {/* 上传标识 */}
-        {video.uploadDate && (
-          <div className="absolute top-1 right-1">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
           </div>
         )}
       </div>
@@ -236,14 +226,15 @@ export default function Home() {
       const response = await fetch("/api/videos");
       if (response.ok) {
         const data = await response.json();
-        const allVideos = [...data.videos, ...sampleVideos];
-        setVideos(allVideos);
+        // 直接从vercel Blob查询视频列表
+        setVideos(data.videos);
       } else {
-        setVideos(sampleVideos);
+        console.error("加载视频失败:", response.status);
+        setVideos([]);
       }
     } catch (error) {
       console.error("加载视频失败:", error);
-      setVideos(sampleVideos);
+      setVideos([]);
     } finally {
       setLoading(false);
     }
@@ -345,16 +336,7 @@ export default function Home() {
       </main>
       <div className="mb-6 text-center">
         <div className="text-gray-400 text-sm">
-          <span className="text-white font-bold">{videos.length}</span> Works
-          {videos.filter((v) => v.uploadDate).length > 0 && (
-            <>
-              {" • "}
-              <span className="text-green-400 font-bold">
-                {videos.filter((v) => v.uploadDate).length}
-              </span>{" "}
-              Uploaded
-            </>
-          )}
+          <span className="text-white font-bold">{videos.length}</span> 个视频
         </div>
       </div>
 

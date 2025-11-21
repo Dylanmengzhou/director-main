@@ -54,30 +54,7 @@ export default function VideoUploadPage() {
             });
 
             setBlob(newBlob);
-
-            // 保存视频信息到服务器
-            try {
-              const response = await fetch("/api/videos", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  title: file.name.replace(/\.[^/.]+$/, ""), // 去掉文件扩展名
-                  url: newBlob.url,
-                  description: `上传于 ${new Date().toLocaleString()}`,
-                }),
-              });
-
-              if (response.ok) {
-                alert("视频上传成功！所有设备都能在主页查看。");
-              } else {
-                alert("视频上传成功，但保存到服务器失败。");
-              }
-            } catch (error) {
-              console.error("保存视频信息失败:", error);
-              alert("视频上传成功，但保存到服务器失败。");
-            }
+            alert("视频上传成功！所有设备都能在主页查看。");
           } catch (error) {
             console.error("上传失败:", error);
             alert("上传失败，请重试");
