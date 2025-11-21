@@ -100,6 +100,53 @@ function VideoCard({
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 移动端滚动自动播放
+  useEffect(() => {
+    const video = videoRef.current;
+    const container = containerRef.current;
+    
+    if (!video || !container) return;
+
+    // 检测是否为移动设备
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                     ('ontouchstart' in window) || 
+                     (window.innerWidth <= 768);
+
+    // 只在移动端启用滚动自动播放
+    if (!isMobile) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && isLoaded) {
+            // 视频进入视口，自动播放
+            video.currentTime = 0;
+            video.play().catch(() => {
+              console.log("Auto play failed");
+            });
+            setIsPlaying(true);
+          } else {
+            // 视频离开视口，暂停播放
+            video.pause();
+            video.currentTime = 0;
+            setIsPlaying(false);
+          }
+        });
+      },
+      {
+        threshold: 0.5, // 当视频50%可见时触发
+        rootMargin: "0px",
+      }
+    );
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isLoaded]);
 
   // 视频加载完成
   const handleCanPlay = () => {
@@ -115,7 +162,7 @@ function VideoCard({
     setIsLoaded(false);
   };
 
-  // 鼠标悬停
+  // 鼠标悬停（桌面端）
   const handleMouseEnter = () => {
     setIsHovered(true);
     if (videoRef.current && isLoaded) {
@@ -123,10 +170,11 @@ function VideoCard({
       videoRef.current.play().catch(() => {
         console.log("Auto play failed");
       });
+      setIsPlaying(true);
     }
   };
 
-  // 鼠标离开
+  // 鼠标离开（桌面端）
   const handleMouseLeave = () => {
     setIsHovered(false);
     setIsPlaying(false);
@@ -143,6 +191,7 @@ function VideoCard({
 
   return (
     <div
+      ref={containerRef}
       className="group relative cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
